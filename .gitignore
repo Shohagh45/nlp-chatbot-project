@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Raw downloads — large files, re-fetchable, excluded from repo
+data/raw/*
+!data/raw/.gitkeep
+
+# Local database — regenerated from Excel by running: python -m src.database
+data/documents.db
+
+# Source data files — kept locally, not committed
+*.xlsx
+*.docx
+
+# Logs
+*.log
