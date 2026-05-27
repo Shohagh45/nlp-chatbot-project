@@ -57,7 +57,7 @@ def format_context_block(retrieved: list[tuple[Chunk, float]]) -> str:
 
 
 class ChatSession:
-    DEFAULT_LLM_MODEL = "granite4.1"
+    DEFAULT_LLM_MODEL = "granite4.1:8b"
     DEFAULT_BASE_URL = "http://localhost:11434/v1"
 
     HELP_TEXT = """\

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+from tqdm import tqdm
 
 from .utils import get_logger
 
@@ -29,16 +30,31 @@ class EmbeddingClient:
         self._client = None
 
     def _get_client(self):
-        """Lazy-initialise the OpenAI SDK client pointed at Ollama."""
-        raise NotImplementedError
+        if self._client is None:
+            from openai import OpenAI
+            self._client = OpenAI(base_url=self.base_url, api_key="ollama")
+        return self._client
 
     def embed(self, text: str) -> np.ndarray:
-        """Embed a single string, returns shape (D,)."""
-        raise NotImplementedError
+        if not text or not text.strip():
+            return np.zeros(self.EXPECTED_DIM, dtype=np.float32)
+        client = self._get_client()
+        response = client.embeddings.create(model=self.model, input=text)
+        vec = np.array(response.data[0].embedding, dtype=np.float32)
+        if self.normalise:
+            norm = np.linalg.norm(vec)
+            if norm > 0:
+                vec = vec / norm
+        return vec
 
     def embed_batch(self, texts: list[str]) -> np.ndarray:
-        """Embed a list of strings, returns shape (N, D)."""
-        raise NotImplementedError
+        all_vecs: list[np.ndarray] = []
+        batches = range(0, len(texts), self.batch_size)
+        for i in tqdm(batches, desc="Embedding chunks", unit="batch"):
+            batch = texts[i : i + self.batch_size]
+            for text in batch:
+                all_vecs.append(self.embed(text))
+        return np.stack(all_vecs).astype(np.float32)
 
     @property
     def dimension(self) -> int:
