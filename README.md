@@ -2,11 +2,11 @@
 
 Submission Date: 2026-06-05
 Team Members:
-- Hugo (Student Number)
-- Elias (Student Number)
-- Sol (Student Number)
-- Ksawery (Student Number)
-- Wouter (Student Number)
+- Hugo (707828)
+- Elias (685288)
+- Sol (700695)
+- Ksawery (715265)
+- Wouter (681115)
 
 ## Project Overview
 
@@ -29,6 +29,17 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+Copy the environment template and adjust to your machine:
+
+```bash
+cp .env.example .env       # Mac/Linux
+copy .env.example .env     # Windows
+```
+
+Open `.env` and pick the LLM tag that matches your hardware:
+- `granite4.1:3b` for CPU-only machines (faster, lower quality)
+- `granite4.1:8b` for machines with a GPU (slower on CPU, better quality)
+
 Install [Ollama](https://ollama.com/download) and pull the models:
 
 ```bash
@@ -38,10 +49,25 @@ ollama pull nomic-embed-text
 
 ---
 
+## Configuration
+
+Both the LLM and the embedding model are served locally via Ollama.
+Defaults are sensible, but you can override them per machine via `.env`:
+
+| Variable             | Default                          | Purpose                                  |
+|----------------------|----------------------------------|------------------------------------------|
+| `CHATBOT_LLM_MODEL`  | `granite4.1:3b` (see chat.py)    | Ollama tag for the chat model            |
+| `OLLAMA_BASE_URL`    | `http://localhost:11434/v1`      | Where the local Ollama server is bound   |
+
+The embedding model is fixed to `nomic-embed-text` (768 dims).
+
+---
+
 ## Usage
 
 ```bash
-# Start the chatbot (vector store is included in the submission)
+# Start the chatbot. The submission zip ships with the prebuilt vector store under data/vector_store/.
+# On a fresh clone, rebuild it first using the steps below.
 python app.py
 ```
 
