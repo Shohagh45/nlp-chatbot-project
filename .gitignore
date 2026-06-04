@@ -32,3 +32,6 @@ data/documents.db
 
 # Logs
 *.log
+
+# Submission build output
+dist/
