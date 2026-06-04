@@ -32,6 +32,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from src.chat import ChatSession
+from src.database import DB_PATH, DocumentDB
 from src.embeddings import EmbeddingClient
 from src.utils import VECTOR_STORE_DIR, get_logger
 from src.vector_db import VectorDB
@@ -44,6 +45,94 @@ BANNER = """\
   Type your question.  /help for commands.  /quit to exit.
 ============================================================
 """
+
+
+def _log_document_index() -> None:
+    """Log a one-line summary of the document index at startup.
+
+    Silently skips (with a friendly hint) when the SQLite db hasn't been
+    built yet, and never crashes the CLI if the file is malformed.
+    """
+    if not DB_PATH.exists():
+        log.info(
+            "Document index not loaded. Run `python -m src.database "
+            "20260331_dataset2.xlsx` to enable corpus stats."
+        )
+        return
+
+    try:
+        doc_db = DocumentDB()
+        stats = doc_db.fetch_stats()
+        total = len(doc_db)
+        fetched = stats.get("success", 0)
+        failed = stats.get("failed", 0)
+        pending = stats.get("pending", 0)
+
+        if pending:
+            line = (
+                f"Document index: {fetched}/{total} fetched "
+                f"({failed} failed, {pending} pending)"
+            )
+        elif failed:
+            line = f"Document index: {fetched}/{total} fetched ({failed} failed)"
+        else:
+            line = f"Document index: {fetched}/{total} fetched"
+        log.info("%s", line)
+    except Exception as exc:
+        log.warning(
+            "Document index present but unreadable (%s); skipping corpus stats.",
+            exc,
+        )
+
+
+def _print_corpus_summary() -> None:
+    """Print document-corpus statistics for the /docs command."""
+    if not DB_PATH.exists():
+        print(
+            "(no document index loaded — run `python -m src.database "
+            "20260331_dataset2.xlsx` to enable this)"
+        )
+        return
+
+    try:
+        doc_db = DocumentDB()
+        stats = doc_db.fetch_stats()
+        total = len(doc_db)
+        fetched = stats.get("success", 0)
+        failed = stats.get("failed", 0)
+        pending = stats.get("pending", 0)
+
+        print("Document corpus:")
+        print(f"  {'Total:':<9}{total:>3}")
+        print(f"  {'Fetched:':<9}{fetched:>3}")
+        print(f"  {'Failed:':<9}{failed:>3}")
+        print(f"  {'Pending:':<9}{pending:>3}")
+
+        # Tally themes from the document rows.
+        theme_counts: dict[str, int] = {}
+        for doc in doc_db.all():
+            theme = (doc.get("theme") or "").strip() or "Unknown"
+            theme_counts[theme] = theme_counts.get(theme, 0) + 1
+
+        # Sort by count descending, then alphabetically as a tiebreaker.
+        ordered = sorted(theme_counts.items(), key=lambda kv: (-kv[1], kv[0]))
+        shown = ordered[:15]
+
+        print()
+        print("  Themes:")
+        if shown:
+            name_width = max(len(name) for name, _ in shown)
+            for name, count in shown:
+                print(f"    {name:<{name_width}}  {count:>3}")
+        if len(ordered) > 15:
+            rest = ordered[15:]
+            if all(count == 1 for _, count in rest):
+                print(f"    ... and {len(rest)} more themes (1 doc each)")
+            else:
+                rest_docs = sum(count for _, count in rest)
+                print(f"    ... and {len(rest)} more themes ({rest_docs} docs total)")
+    except Exception as exc:
+        print(f"(could not read document index: {exc})")
 
 
 def run_cli() -> None:
@@ -70,6 +159,8 @@ def run_cli() -> None:
     db.load()
     log.info("Loaded %d chunks.", len(db))
 
+    _log_document_index()
+
     embedder = EmbeddingClient()
     session = ChatSession(vector_db=db, embedder=embedder)
 
@@ -93,11 +184,16 @@ def run_cli() -> None:
 
         if user_input.lower() == "/help":
             print(session.help())
+            print("  /docs    Show indexed document corpus statistics")
             continue
 
         if user_input.lower() == "/reset":
             session.reset()
             print("(conversation reset)")
+            continue
+
+        if user_input.lower() == "/docs":
+            _print_corpus_summary()
             continue
 
         try:
