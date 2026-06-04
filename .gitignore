@@ -27,5 +27,8 @@ data/documents.db
 *.xlsx
 *.docx
 
+# Local environment config — each person has their own
+.env
+
 # Logs
 *.log

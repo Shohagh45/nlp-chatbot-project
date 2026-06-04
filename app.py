@@ -28,6 +28,9 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from src.chat import ChatSession
 from src.embeddings import EmbeddingClient
 from src.utils import VECTOR_STORE_DIR, get_logger

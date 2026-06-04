@@ -83,7 +83,7 @@ class ChatSession:
     # pipeline runs as-is once teammates finish. Override without touching code
     # via the CHATBOT_LLM_MODEL / OLLAMA_BASE_URL environment variables (handy
     # if someone has the model under a different tag, e.g. "granite4.1:8b").
-    DEFAULT_LLM_MODEL = os.environ.get("CHATBOT_LLM_MODEL", "granite4.1")
+    DEFAULT_LLM_MODEL = os.environ.get("CHATBOT_LLM_MODEL", "granite4.1:3b")
     DEFAULT_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434/v1")
 
     HELP_TEXT = """\
