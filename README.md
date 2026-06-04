@@ -43,7 +43,7 @@ Open `.env` and pick the LLM tag that matches your hardware:
 Install [Ollama](https://ollama.com/download) and pull the models:
 
 ```bash
-ollama pull granite4.1:8b
+ollama pull granite4.1:8b      # or granite4.1:3b for CPU-only machines (the default)
 ollama pull nomic-embed-text
 ```
 
@@ -115,6 +115,8 @@ nlp_chatbot_project/
 ---
 
 ## NLP Approach
+
+_For a deeper technical walk-through (embedding math, chunking trade-offs, alternatives we considered), see [docs/nlp_approach.md](docs/nlp_approach.md)._
 
 ### 1. Document Acquisition
 
@@ -219,7 +221,7 @@ across turns while allowing natural variation in phrasing.
 ### 7. Conversation Management
 
 Conversation history is maintained as a rolling window of the last 8 turns
-(4 exchanges). `granite4.1:8b` supports a 128 K-token context window, so
+(4 exchanges). `granite4.1` supports a 128 K-token context window, so
 there is no need for aggressive summarisation at typical conversation
 lengths. The rolling window means the model retains enough context to
 resolve follow-up references ("and what about children?", "can they appeal
