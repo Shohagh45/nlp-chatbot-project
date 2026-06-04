@@ -1,161 +1,230 @@
 # NLP Policy Chatbot
 
-A retrieval-augmented chatbot that answers questions about AI ethics —
-trust, fairness, responsibility, transparency, accountability, and related
-themes — grounded in primary EU policy sources (the AI Act, EDPS/EDPB
-guidance, JRC reports, European Parliament briefings).
+Submission Date: 2026-06-05
+Team Members:
+- Hugo (Student Number)
+- Elias (Student Number)
+- Sol (Student Number)
+- Ksawery (Student Number)
+- Wouter (Student Number)
 
-> **Status:** scaffolding. See `docs/task_assignments.md` for who owns what.
+## Project Overview
+
+A retrieval-augmented chatbot that answers questions about EU artificial
+intelligence policy — trust, fairness, responsibility, transparency,
+accountability, deepfakes, healthcare AI, and related themes. Every answer
+is grounded in primary EU sources: the AI Act, EDPS/EDPB guidance, JRC
+reports, and European Parliament briefings. The bot does not generate
+opinions or invent facts; it retrieves relevant passages from real documents
+and uses them to inform its replies, always citing the source.
 
 ---
 
-## Quick start
+## Installation
 
 ```bash
-# 1. Set up the environment
 python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
+.venv\Scripts\activate          # Windows
+# source .venv/bin/activate     # Mac/Linux
 pip install -r requirements.txt
+```
 
-# 2. Make sure Ollama is running and the models are pulled
-ollama pull llama3.1:8b
+Install [Ollama](https://ollama.com/download) and pull the models:
+
+```bash
+ollama pull granite4.1:8b
 ollama pull nomic-embed-text
+```
 
-# 3. Chat (vector store is shipped with the submission)
+---
+
+## Usage
+
+```bash
+# Start the chatbot (vector store is included in the submission)
 python app.py
 ```
 
-To rebuild the vector store from scratch:
+To rebuild the knowledge base from scratch:
 
 ```bash
-python -m src.downloader 20260331_dataset2.xlsx   # fetches PDFs / HTML
-python -m src.preprocessing                        # extracts + chunks
-python -m src.vector_db                            # embeds + persists
+python -m src.downloader 20260331_dataset2.xlsx
+python -m src.preprocessing
+python -m src.vector_db
+python app.py
 ```
+
+Available commands inside the chat:
+- `/help` — show available commands
+- `/reset` — clear conversation history
+- `/quit` — exit
 
 ---
 
-## Project structure
+## Project Structure
 
 ```
 nlp_chatbot_project/
-├── README.md
-├── requirements.txt
 ├── app.py                     # CLI entry point
+├── requirements.txt
 ├── data/
-│   ├── raw/                   # downloaded PDFs/HTML (rebuilt from Excel)
-│   ├── processed/             # cleaned text + chunks.json  (shipped)
+│   ├── raw/                   # downloaded PDFs and HTML files
+│   ├── processed/             # chunks.json (shipped with submission)
 │   └── vector_store/          # embeddings.npz + chunks.json (shipped)
-├── docs/
-│   ├── architecture.md        # how the modules connect
-│   └── task_assignments.md    # who owns what
 ├── src/
-│   ├── downloader.py          # Excel + HTTP fetch
+│   ├── downloader.py          # reads Excel manifest, downloads documents
 │   ├── preprocessing.py       # text extraction, cleaning, chunking
-│   ├── embeddings.py          # Ollama nomic-embed-text wrapper
-│   ├── vector_db.py           # from-scratch vector DB
-│   ├── chat.py                # persona, prompt, RAG orchestration
-│   └── utils.py               # shared dataclasses + helpers
+│   ├── embeddings.py          # nomic-embed-text wrapper
+│   ├── vector_db.py           # from-scratch vector database
+│   ├── chat.py                # persona, prompt engineering, RAG pipeline
+│   ├── database.py            # SQLite metadata layer
+│   └── utils.py               # shared dataclasses and helpers
 └── tests/
+    └── test_smoke.py
 ```
 
 ---
 
-## NLP approach
+## NLP Approach
 
-> **This section is graded.** Fill it out with substance — diagrams welcome.
-> Below is a skeleton to expand. Each subsection should be 2–4 paragraphs.
+### 1. Document Acquisition
 
-### 1. Document acquisition
+We parse an Excel manifest of 87 EU policy publications. Each row provides
+a document ID, title, publisher, URL, theme, and citation. The downloader
+detects whether a URL points to a PDF or an HTML page using the URL suffix
+and the HTTP `Content-Type` response header, then saves each file to
+`data/raw/` using the document ID as the filename. Network failures are
+caught and recorded per document — a single broken URL never stops the
+pipeline. The full manifest including fetch status is saved as
+`data/raw/manifest.json`, giving downstream stages a single source of truth
+without needing to re-examine the raw files.
 
-We parse an Excel manifest of 87 EU policy sources, distinguishing PDFs from
-HTML pages by URL suffix and by `Content-Type` after fetch. Failures are
-captured (not raised) so a single dead URL never kills the pipeline. The
-fetch result is written to `data/raw/manifest.json` so downstream stages
-work from a single source of truth.
+### 2. Text Extraction & Cleaning
 
-### 2. Text extraction & cleaning
+PDFs are extracted with `pypdf`, concatenating pages with a separator so
+page boundaries are preserved. When `pypdf` returns suspiciously little text
+(fewer than 200 characters), we fall back to `pdfplumber`, which handles
+scanned or complex layout PDFs more reliably. HTML pages are reduced to
+their main content using `BeautifulSoup`: navigation bars, footers, scripts,
+and styles are stripped, and the `<main>` or `<article>` element is
+preferred when present.
 
-PDFs are extracted with `pypdf`. HTML pages are reduced to their `<main>`
-or `<article>` content with BeautifulSoup, stripping navigation, scripts,
-and styles. After extraction we normalise: ligatures (`ﬁ` → `fi`), soft
-and non-breaking hyphens, smart quotes, and collapsed whitespace. *Discuss
-why these matter for embedding quality: tokenisers split `ﬁle` differently
-from `file`, harming retrieval recall.*
+After extraction we apply text normalisation: PDF ligatures (`ﬁ` → `fi`,
+`ﬀ` → `ff`), soft hyphens, non-breaking hyphens, and collapsed whitespace
+are all standardised. These steps matter for embedding quality because a
+tokeniser treats `ﬁle` and `file` as different tokens, which would cause
+semantic mismatch between a user's query and the indexed content.
 
-### 3. Chunking
+### 3. Chunking Strategy
 
-We use overlapping paragraph-aware chunks of ~500 tokens with ~50 tokens
-of overlap. *Discuss the tradeoff: smaller chunks improve precision (each
-chunk has a tight topic) but lose surrounding context; larger chunks
-preserve context but dilute the embedding signal. Overlap protects against
-information being split awkwardly across chunk boundaries.*
+We split documents into overlapping chunks of approximately 500 words with
+a 50-word overlap between consecutive chunks. Splits prefer paragraph
+boundaries over sentence boundaries, and sentence boundaries over hard cuts
+mid-word. Chunks shorter than 100 characters are discarded as likely noise.
 
-### 4. Embeddings — why nomic-embed-text
+The 500-word target balances two competing concerns: shorter chunks have
+tighter, more focused topics (which improves retrieval precision), but lose
+surrounding context that the model needs to give a coherent answer. The
+50-word overlap ensures that information sitting near a chunk boundary is
+captured in both adjacent chunks, so no sentence is permanently lost to a
+split. Each chunk carries full source metadata — document ID, title,
+publisher, URL, theme, and chunk index — so every retrieved passage can be
+attributed back to its original document.
 
-We use `nomic-embed-text` (768 dimensions) served by Ollama. *Discuss:
-- Trained on a large corpus of diverse English text — matches our policy
-  document register reasonably well.
-- 768 dimensions is a typical sweet spot: high enough to capture nuance,
-  low enough to keep the vector store small and search fast.
-- L2-normalised at insertion time, so cosine similarity becomes a simple
-  matrix-vector product.
-- Why not `text-embedding-ada-002`? It performs comparably but requires an
-  external API and money; nomic runs locally.*
+### 4. Text Embeddings
 
-### 5. Vector storage & similarity search
+We use `nomic-embed-text` (768 dimensions) served locally via Ollama. This
+model was trained on a large, diverse corpus of English text and handles the
+formal register of EU policy documents well. 768 dimensions provides a
+useful balance: high enough to represent fine-grained semantic distinctions
+between policy concepts, low enough that the full matrix (~2000 chunks ×
+768 floats) fits comfortably in RAM and search remains fast.
 
-A pure-numpy index. Embeddings are stored as a single `float32` matrix in
-`embeddings.npz`; chunks and their metadata live alongside in `chunks.json`,
-row-aligned with the matrix. At query time we embed the user's message,
-compute `scores = embeddings @ q_vec` (valid because everything is unit
-length), then take the top-k with `np.argpartition`. This is exact cosine
-similarity, O(N·D) per query. *Discuss when this stops working — ANN
-indexes (HNSW, IVF) become necessary above ~10⁶ vectors. We have ~2000,
-so brute force is the right call.*
+All embeddings are L2-normalised at insertion time, which means the vector
+for every chunk has length exactly 1. This transformation is the key
+optimisation in our search step: once vectors are unit-length, cosine
+similarity between any two vectors equals their dot product. That reduces
+the retrieval step to a single matrix multiplication with no division.
 
-### 6. RAG prompt design
+We chose a locally-hosted model over a cloud embedding API (such as
+`text-embedding-ada-002`) for two reasons: it runs without internet access
+or API keys, and it keeps the entire system self-contained — a requirement
+for reproducible academic work.
 
-Each user message triggers retrieval of the top-k chunks (k=6 by default,
-filtered by a similarity threshold to suppress noise). Retrieved chunks
-are injected into the prompt with their titles and publishers. The system
-prompt encodes the persona (calm, reflective, honest about limits) and
-explicit instructions on citation, honesty about coverage gaps, and
-following up rather than info-dumping. *Discuss the prompt-engineering
-tradeoffs: temperature, citation format, when to ask vs answer.*
+### 5. Vector Database & Similarity Search
 
-### 7. Conversation context
+The vector store is implemented from scratch using only NumPy. Embeddings
+are stored as a single `float32` matrix in `embeddings.npz`
+(shape `N × 768`); the corresponding chunk metadata lives in `chunks.json`,
+row-aligned with the matrix so the i-th row always corresponds to the i-th
+chunk.
 
-History is kept as a rolling window of the last N turns (default 8).
-llama3.1:8b's 128K context window means we don't need aggressive
-summarisation. For very long conversations we can add a summarisation
-pass — see `chat.py` for the hook.
+At query time we embed the user's message with the same model, normalise
+the query vector, then compute `scores = embeddings_matrix @ query_vector`.
+This one line gives the cosine similarity between the query and every chunk
+simultaneously. We use `np.argpartition` to extract the top-k results
+without sorting the full array, then sort only those k entries. Chunks
+scoring below a threshold of 0.25 are filtered out to avoid passing
+irrelevant context to the language model.
 
-### 8. Source attribution
+This brute-force approach is O(N·D) per query — appropriate for our corpus
+of approximately 2000 chunks. Approximate nearest-neighbour indexes (HNSW,
+IVF) would be necessary above roughly one million vectors; at our scale they
+would add complexity with no measurable benefit.
 
-Every reply is followed by a deduplicated list of the documents the
-retrieval step pulled, so users can verify even when the model forgets to
-cite inline. This is independent of the model's behaviour, so it never
-fails silently.
+### 6. Prompt Engineering & RAG Design
 
-### 9. Error handling
+Each conversation turn triggers retrieval of the top-6 chunks above the
+similarity threshold. Retrieved chunks are formatted into a numbered context
+block and injected into the user-side message alongside the original
+question, so the model sees both what was asked and what the documents say.
 
-Network errors during fetch are logged and recorded but don't stop the
-pipeline. Empty or malformed PDFs produce empty extraction, which is
-filtered out before chunking. Missing vector store at app startup prints
-actionable instructions rather than crashing.
+The system prompt encodes a specific persona: a calm, reflective assistant
+that validates a user's concern before discussing policy, uses retrieved
+text as background rather than quoting it verbatim, ends replies with a
+short follow-up question, and declines off-topic requests without breaking
+character. This design follows the conversation examples in the assignment
+scenario files. The temperature is set to 0.3 to keep the tone consistent
+across turns while allowing natural variation in phrasing.
+
+### 7. Conversation Management
+
+Conversation history is maintained as a rolling window of the last 8 turns
+(4 exchanges). `granite4.1:8b` supports a 128 K-token context window, so
+there is no need for aggressive summarisation at typical conversation
+lengths. The rolling window means the model retains enough context to
+resolve follow-up references ("and what about children?", "can they appeal
+that?") without the prompt growing indefinitely. History stores the raw user
+message and the assistant reply — not the retrieval-augmented prompt — to
+keep the context compact.
+
+### 8. Source Attribution
+
+After every reply, the application prints a deduplicated list of the
+documents the retrieval step drew from, regardless of whether the model
+cited them inline. This is implemented in `app.py` independently of the
+language model, so attribution never fails silently even if the model
+omits a citation.
+
+### 9. Error Handling
+
+Network failures during document download are caught per URL, logged, and
+recorded in the manifest as `fetch_status="failed"`. The preprocessing
+stage skips any document not marked `success`. Empty or near-empty
+extractions are discarded before chunking. If the vector store is missing
+at startup, the application prints actionable rebuild instructions instead
+of raising a traceback. These measures mean the system degrades gracefully
+when individual documents are unavailable.
 
 ---
 
-## Limitations
+## Known Limitations
 
-- English only. Many EU sources are also published in other languages but
-  this build does not retrieve them.
-- Snapshot in time. The corpus reflects EU policy as of early 2026; later
-  updates require re-running the downloader.
-- No web fallback. If a question is outside the corpus, the bot will say so
-  rather than guess — and will not search the web at runtime.
-
-## Authors
-
-See `docs/task_assignments.md` for the team breakdown.
+- **English only.** EU sources are published in all official EU languages
+  but this build indexes only English-language documents.
+- **Static corpus.** The knowledge base reflects EU AI policy as of early
+  2026. Documents published after the download date are not included.
+- **No live web search.** When a question falls outside the corpus the bot
+  says so rather than searching the internet.
+- **Local models only.** Both the embedding model and the language model run
+  on the user's machine via Ollama. A machine without a GPU will be slower.
