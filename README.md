@@ -66,9 +66,12 @@ The embedding model is fixed to `nomic-embed-text` (768 dims).
 ## Usage
 
 ```bash
-# Start the chatbot. The submission zip ships with the prebuilt vector store under data/vector_store/.
+# Start the chatbot (CLI). The submission zip ships with the prebuilt vector store under data/vector_store/.
 # On a fresh clone, rebuild it first using the steps below.
 python app.py
+
+# Or start the optional web UI:
+streamlit run app.py
 ```
 
 To rebuild the knowledge base from scratch:
