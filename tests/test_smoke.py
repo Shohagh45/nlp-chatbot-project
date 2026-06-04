@@ -65,17 +65,12 @@ def test_paths_are_correct():
 
 
 def test_remaining_stubs_raise_not_implemented():
-    """Hugo, Elias and Ksawery's modules are still stubs."""
+    """Hugo's downloader is still a stub (preprocessing is now implemented)."""
     from src.downloader import Downloader
-    from src.preprocessing import Preprocessor
 
     dl = Downloader(excel_path=Path("nonexistent.xlsx"))
     with pytest.raises(NotImplementedError):
         dl.load_manifest()
-
-    pre = Preprocessor()
-    with pytest.raises(NotImplementedError):
-        pre.clean("test")
 
 
 def test_vector_db_add_and_search():

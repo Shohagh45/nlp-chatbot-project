@@ -1,0 +1,41 @@
+[
+  {
+    "id": "SAMPLE-01::0",
+    "doc_id": "SAMPLE-01",
+    "text": "The EU Artificial Intelligence Act The Artificial Intelligence Act establishes a harmonised legal framework for the development, placing on the market, and use of artificial intelligence systems across the European Union. It follows a risk-based approach, classifying systems according to the level of risk they pose to health, safety, and fundamental rights. High-risk systems are subject to strict obligations including risk management, data governance, transparency, human oversight, and robustness before they can be placed on the market. Transparency is central: providers of systems intended to interact with people must ensure those people know they are dealing with a machine, and deepfakes must be clearly labelled so that citizens can make informed judgements about the content they encounter online every day. Accountability rests with the human actors who deploy or rely on a system, not with the system itself. Deployers of high-risk artificial intelligence must maintain meaningful human oversight, keep logs, and be able to explain the basis of automated decisions to the individuals those decisions affect. This reflects the human-centric philosophy that runs through European digital policy. The regulation also stresses AI literacy: nearly half of EU citizens lack basic digital skills, which creates real risks when responsibility for consequential decisions is quietly shifted onto opaque systems. Raising literacy among providers, deployers, and the public keeps human judgement central to how these technologies are actually used in work and in education across the Union today. The Artificial Intelligence Act establishes a harmonised legal framework for the development, placing on the market, and use of artificial intelligence systems across the European Union. It follows a risk-based approach, classifying systems according to the level of risk they pose to health, safety, and fundamental rights. High-risk systems are subject to strict obligations including risk management, data governance, transparency, human oversight, and robustness before they can be placed on the market. Transparency is central: providers of systems intended to interact with people must ensure those people know they are dealing with a machine, and deepfakes must be clearly labelled so that citizens can make informed judgements about the content they encounter online every day. Accountability rests with the human actors who deploy or rely on a system, not with the system itself. Deployers of high-risk artificial intelligence must maintain meaningful human oversight, keep logs, and be able to explain the basis of automated decisions to the individuals those decisions affect. This reflects the human-centric philosophy that runs through European digital policy. The regulation also stresses AI literacy: nearly half of EU citizens lack basic digital skills, which creates real risks when responsibility for consequential decisions is quietly shifted onto opaque systems. Raising literacy among providers, deployers, and the public keeps human judgement central to how these technologies are actually used in work and in education across the Union today.",
+    "metadata": {
+      "title": "The EU Artificial Intelligence Act",
+      "publisher": "European Commission",
+      "url": "https://example.eu/sample-01",
+      "theme": "Trust",
+      "date": "2025",
+      "chunk_index": 0
+    }
+  },
+  {
+    "id": "SAMPLE-01::1",
+    "doc_id": "SAMPLE-01",
+    "text": "of EU citizens lack basic digital skills, which creates real risks when responsibility for consequential decisions is quietly shifted onto opaque systems. Raising literacy among providers, deployers, and the public keeps human judgement central to how these technologies are actually used in work and in education across the Union today. The Artificial Intelligence Act establishes a harmonised legal framework for the development, placing on the market, and use of artificial intelligence systems across the European Union. It follows a risk-based approach, classifying systems according to the level of risk they pose to health, safety, and fundamental rights. High-risk systems are subject to strict obligations including risk management, data governance, transparency, human oversight, and robustness before they can be placed on the market. Transparency is central: providers of systems intended to interact with people must ensure those people know they are dealing with a machine, and deepfakes must be clearly labelled so that citizens can make informed judgements about the content they encounter online every day.",
+    "metadata": {
+      "title": "The EU Artificial Intelligence Act",
+      "publisher": "European Commission",
+      "url": "https://example.eu/sample-01",
+      "theme": "Trust",
+      "date": "2025",
+      "chunk_index": 1
+    }
+  },
+  {
+    "id": "SAMPLE-02::0",
+    "doc_id": "SAMPLE-02",
+    "text": "Deepfakes and Information Integrity Accountability rests with the human actors who deploy or rely on a system, not with the system itself. Deployers of high-risk artificial intelligence must maintain meaningful human oversight, keep logs, and be able to explain the basis of automated decisions to the individuals those decisions affect. This reflects the human-centric philosophy that runs through European digital policy. The regulation also stresses AI literacy: nearly half of EU citizens lack basic digital skills, which creates real risks when responsibility for consequential decisions is quietly shifted onto opaque systems. Raising literacy among providers, deployers, and the public keeps human judgement central to how these technologies are actually used in work and in education across the Union today. The Artificial Intelligence Act establishes a harmonised legal framework for the development, placing on the market, and use of artificial intelligence systems across the European Union. It follows a risk-based approach, classifying systems according to the level of risk they pose to health, safety, and fundamental rights. High-risk systems are subject to strict obligations including risk management, data governance, transparency, human oversight, and robustness before they can be placed on the market. Transparency is central: providers of systems intended to interact with people must ensure those people know they are dealing with a machine, and deepfakes must be clearly labelled so that citizens can make informed judgements about the content they encounter online every day.",
+    "metadata": {
+      "title": "Deepfakes and Information Integrity",
+      "publisher": "European Commission",
+      "url": "https://example.eu/sample-02",
+      "theme": "Bias, Discrimination & Fairness",
+      "date": "2025",
+      "chunk_index": 0
+    }
+  }
+]
