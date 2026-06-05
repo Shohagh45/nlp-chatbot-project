@@ -64,13 +64,28 @@ def test_paths_are_correct():
     assert VECTOR_STORE_DIR == DATA_DIR / "vector_store"
 
 
-def test_remaining_stubs_raise_not_implemented():
-    """Hugo's downloader is still a stub (preprocessing is now implemented)."""
+def test_load_manifest_reads_excel(tmp_path: Path):
+    import pandas as pd
     from src.downloader import Downloader
 
-    dl = Downloader(excel_path=Path("nonexistent.xlsx"))
-    with pytest.raises(NotImplementedError):
-        dl.load_manifest()
+    excel = tmp_path / "test.xlsx"
+    pd.DataFrame([{
+        "id": "R01‑01",          # non-breaking hyphen → should become R01-01
+        "title": "  Test Doc  ",
+        "url": "https://example.com/doc.pdf",
+        "publisher": "EPRS",
+        "date": "2025",
+        "theme": "AI",
+        "keywords": "ai, trust",
+        "bronvermelding": "EPRS, 2025.",
+    }]).to_excel(excel, index=False)
+
+    docs = Downloader(excel).load_manifest()
+
+    assert len(docs) == 1
+    assert docs[0].id == "R01-01"
+    assert docs[0].title == "Test Doc"
+    assert docs[0].citation == "EPRS, 2025."
 
 
 def test_vector_db_add_and_search():

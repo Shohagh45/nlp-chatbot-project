@@ -23,11 +23,70 @@ class Downloader:
 
     def load_manifest(self) -> list[Document]:
         """Read the Excel file and return one Document per row."""
-        raise NotImplementedError
+        import pandas as pd
+        import unicodedata
+
+        df = pd.read_excel(self.excel_path, sheet_name=0, dtype=str)
+        # Normalise column names to lowercase and strip whitespace
+        df.columns = [c.strip().lower() for c in df.columns]
+
+        docs: list[Document] = []
+        for _, row in df.iterrows():
+            def clean(val: object) -> str:
+                if not isinstance(val, str) or val in ("nan", "NaN"):
+                    return ""
+                # Collapse internal newlines/tabs to a single space
+                val = " ".join(val.split())
+                # Replace non-standard Unicode hyphens/dashes with an ASCII hyphen
+                val = "".join(
+                    "-" if unicodedata.category(ch) in ("Pd",) and ch != "-" else ch
+                    for ch in val
+                )
+                return val.strip()
+
+            docs.append(Document(
+                id=clean(row.get("id", "")),
+                title=clean(row.get("title", "")),
+                url=clean(row.get("url", "")),
+                publisher=clean(row.get("publisher", "")),
+                date=clean(row.get("date", "")),
+                theme=clean(row.get("theme", "")),
+                keywords=clean(row.get("keywords", "")),
+                citation=clean(row.get("bronvermelding", "")),
+            ))
+
+        log.info("Loaded %d documents from %s", len(docs), self.excel_path)
+        return docs
 
     def fetch_one(self, doc: Document) -> Document:
         """Download one document and set local_path, fetch_status, fetch_error."""
-        raise NotImplementedError
+        import requests
+
+        is_pdf = doc.url.lower().split("?")[0].endswith(".pdf")
+        ext = "pdf" if is_pdf else "html"
+        doc.content_type = ext
+        local_path = self.raw_dir / f"{doc.id}.{ext}"
+        doc.local_path = str(local_path)
+
+        if local_path.exists():
+            doc.fetch_status = "skipped"
+            log.debug("Skipped (already exists): %s", local_path)
+            return doc
+
+        self.raw_dir.mkdir(parents=True, exist_ok=True)
+        session = requests.Session()
+        session.headers["User-Agent"] = self.user_agent
+        try:
+            r = session.get(doc.url, timeout=self.timeout)
+            r.raise_for_status()
+            local_path.write_bytes(r.content)
+            doc.fetch_status = "success"
+            log.info("Fetched %s -> %s", doc.id, local_path.name)
+        except Exception as exc:
+            doc.fetch_status = "failed"
+            doc.fetch_error = str(exc)
+            log.warning("Failed %s: %s", doc.id, exc)
+        return doc
 
     def download_all(self, docs: list[Document]) -> list[Document]:
         results = []
