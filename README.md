@@ -29,17 +29,6 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Copy the environment template and adjust to your machine:
-
-```bash
-cp .env.example .env       # Mac/Linux
-copy .env.example .env     # Windows
-```
-
-Open `.env` and pick the LLM tag that matches your hardware:
-- `granite4.1:3b` for CPU-only machines (faster, lower quality)
-- `granite4.1:8b` for machines with a GPU (slower on CPU, better quality)
-
 Install [Ollama](https://ollama.com/download) and pull the models:
 
 ```bash
@@ -49,10 +38,10 @@ ollama pull nomic-embed-text
 
 ---
 
-## Configuration
+## Configuration (optional)
 
-Both the LLM and the embedding model are served locally via Ollama.
-Defaults are sensible, but you can override them per machine via `.env`:
+The project runs out of the box with `granite4.1:3b` and `http://localhost:11434/v1`.
+To override, copy `.env.example` to `.env` and adjust:
 
 | Variable             | Default                          | Purpose                                  |
 |----------------------|----------------------------------|------------------------------------------|
@@ -109,7 +98,9 @@ nlp_chatbot_project/
 │   ├── database.py            # SQLite metadata layer
 │   └── utils.py               # shared dataclasses and helpers
 └── tests/
-    └── test_smoke.py
+    ├── test_smoke.py          # import + dataclass + VectorDB tests
+    ├── test_preprocessing.py  # chunking and cleaning tests
+    └── test_evaluation.py     # 10 retrieval quality queries
 ```
 
 ---
