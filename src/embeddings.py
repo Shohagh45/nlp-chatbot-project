@@ -35,11 +35,27 @@ class EmbeddingClient:
             self._client = OpenAI(base_url=self.base_url, api_key="ollama")
         return self._client
 
+    # nomic-embed-text actual context is 2048 tokens. EU policy language is dense
+    # so we start at 2000 chars (~300 tokens) and halve on failure until it fits.
+    MAX_CHARS = 2000
+
     def embed(self, text: str) -> np.ndarray:
         if not text or not text.strip():
             return np.zeros(self.EXPECTED_DIM, dtype=np.float32)
         client = self._get_client()
-        response = client.embeddings.create(model=self.model, input=text)
+        current = text[:self.MAX_CHARS]
+        while current:
+            try:
+                response = client.embeddings.create(model=self.model, input=current)
+                if len(current) < len(text):
+                    log.warning("Embedded truncated text (%d/%d chars)", len(current), len(text))
+                break
+            except Exception as exc:
+                if "context" in str(exc).lower() and len(current) > 100:
+                    current = current[:len(current) // 2]
+                    log.warning("Context too long, halving to %d chars", len(current))
+                else:
+                    raise
         vec = np.array(response.data[0].embedding, dtype=np.float32)
         if self.normalise:
             norm = np.linalg.norm(vec)
