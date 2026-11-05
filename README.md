@@ -1,12 +1,7 @@
 # NLP Policy Chatbot
 
 Submission Date: 2026-06-05
-Team Members:
-- Hugo (707828)
-- Elias (685288)
-- Sol (700695)
-- Ksawery (715265)
-- Wouter (681115)
+
 
 ## Project Overview
 
